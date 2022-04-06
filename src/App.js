@@ -262,9 +262,30 @@ function App() {
     const h = 250;
 
     const dataset = [
-      5, 10, 13, 19, 21, 25, 22, 18, 15, 13, 11, 12, 15, 20, 18, 17, 16, 18, 23,
-      25,
+      { key: 0, value: 5 },
+      { key: 1, value: 10 },
+      { key: 2, value: 13 },
+      { key: 3, value: 19 },
+      { key: 4, value: 21 },
+      { key: 5, value: 25 },
+      { key: 6, value: 22 },
+      { key: 7, value: 18 },
+      { key: 8, value: 15 },
+      { key: 9, value: 13 },
+      { key: 10, value: 11 },
+      { key: 11, value: 12 },
+      { key: 12, value: 15 },
+      { key: 13, value: 20 },
+      { key: 14, value: 18 },
+      { key: 15, value: 17 },
+      { key: 16, value: 16 },
+      { key: 17, value: 18 },
+      { key: 18, value: 23 },
+      { key: 19, value: 25 },
     ];
+
+    const key = (d) => d.key;
+    const value = (d) => d.value;
 
     const xScale = d3
       .scaleBand()
@@ -274,7 +295,7 @@ function App() {
 
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(dataset)])
+      .domain([0, d3.max(dataset, value)])
       .range([h, 0]);
 
     const svg = d3
@@ -285,40 +306,43 @@ function App() {
 
     svg
       .selectAll("rect")
-      .data(dataset)
+      .data(dataset, key)
       .enter()
       .append("rect")
       .attr("x", (d, i) => xScale(i))
-      .attr("y", (d, i) => yScale(d))
+      .attr("y", (d, i) => yScale(d.value))
       .attr("width", xScale.bandwidth())
       .attr("height", h)
       .style("fill", "teal");
 
     svg
       .selectAll("text")
-      .data(dataset)
+      .data(dataset, key)
       .enter()
       .append("text")
-      .text((d) => d)
+      .text(value)
       .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2)
-      .attr("y", (d, i) => yScale(d) + 12)
+      .attr("y", (d, i) => yScale(d.value) + 12)
       .style("font-size", 12)
       .style("fill", "#fff")
       .style("text-anchor", "middle");
 
     d3.select("p.add").on("click", () => {
-      dataset.push(Math.ceil(Math.random() * 20));
+      dataset.push({
+        key: dataset[dataset.length - 1].key + 1,
+        value: Math.ceil(Math.random() * 20),
+      });
 
       xScale.domain(d3.range(dataset.length));
-      yScale.domain([0, d3.max(dataset)]);
+      yScale.domain([0, d3.max(dataset, value)]);
 
-      const bars = svg.selectAll("rect").data(dataset);
+      const bars = svg.selectAll("rect").data(dataset, key);
 
       bars
         .enter()
         .append("rect")
         .attr("x", w)
-        .attr("y", (d, i) => yScale(d))
+        .attr("y", (d, i) => yScale(d.value))
         .attr("width", xScale.bandwidth())
         .attr("height", h)
         .style("fill", "teal")
@@ -326,18 +350,18 @@ function App() {
         .transition()
         .duration(1000)
         .attr("x", (d, i) => xScale(i))
-        .attr("y", (d, i) => yScale(d))
+        .attr("y", (d, i) => yScale(d.value))
         .attr("width", xScale.bandwidth())
         .attr("height", h);
 
-      const texts = svg.selectAll("text").data(dataset);
+      const texts = svg.selectAll("text").data(dataset, key);
 
       texts
         .enter()
         .append("text")
-        .text((d) => d)
+        .text(value)
         .attr("x", (d, i) => w + xScale.bandwidth() / 2)
-        .attr("y", (d, i) => yScale(d) + 12)
+        .attr("y", (d, i) => yScale(d.value) + 12)
         .style("font-size", 12)
         .style("fill", "#fff")
         .style("text-anchor", "middle")
@@ -345,40 +369,45 @@ function App() {
         .transition()
         .duration(1000)
         .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2)
-        .attr("y", (d, i) => yScale(d) + 12);
+        .attr("y", (d, i) => yScale(d.value) + 12);
     });
 
     d3.select("p.remove").on("click", () => {
-      dataset.pop();
+      dataset.shift();
 
       xScale.domain(d3.range(dataset.length));
-      yScale.domain([0, d3.max(dataset)]);
+      yScale.domain([0, d3.max(dataset, value)]);
 
-      const bars = svg.selectAll("rect").data(dataset);
+      const bars = svg.selectAll("rect").data(dataset, key);
 
-      bars.exit().transition().duration(500).attr("x", w).remove();
+      bars
+        .exit()
+        .transition()
+        .duration(500)
+        .attr("x", -xScale.bandwidth())
+        .remove();
       bars
         .transition()
         .duration(500)
         .attr("x", (d, i) => xScale(i))
-        .attr("y", (d, i) => yScale(d))
+        .attr("y", (d, i) => yScale(d.value))
         .attr("width", xScale.bandwidth())
         .attr("height", h);
 
-      const texts = svg.selectAll("text").data(dataset);
+      const texts = svg.selectAll("text").data(dataset, key);
 
       texts
         .exit()
         .transition()
         .duration(250)
-        .attr("x", w)
+        .attr("x", -xScale.bandwidth())
         .remove();
       texts
         .transition()
         .duration(500)
-        .text((d) => d)
+        .text(value)
         .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2)
-        .attr("y", (d, i) => yScale(d) + 12);
+        .attr("y", (d, i) => yScale(d.value) + 12);
     });
   };
 
