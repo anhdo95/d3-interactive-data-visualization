@@ -313,7 +313,13 @@ function App() {
       .attr("y", (d, i) => yScale(d.value))
       .attr("width", xScale.bandwidth())
       .attr("height", h)
-      .style("fill", "teal");
+      .style("fill", "teal")
+      .on("mouseover", function (d) {
+        d3.select(this).transition().duration(350).style("fill", "orange");
+      })
+      .on("mouseout", function () {
+        d3.select(this).transition().duration(350).style("fill", "teal");
+      });
 
     svg
       .selectAll("text")
@@ -325,7 +331,8 @@ function App() {
       .attr("y", (d, i) => yScale(d.value) + 12)
       .style("font-size", 12)
       .style("fill", "#fff")
-      .style("text-anchor", "middle");
+      .style("text-anchor", "middle")
+      .style("pointer-events", "none");
 
     d3.select("p.add").on("click", () => {
       dataset.push({
@@ -409,6 +416,8 @@ function App() {
         .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2)
         .attr("y", (d, i) => yScale(d.value) + 12);
     });
+
+    d3.select("p.sort").on("click", () => {});
   };
 
   return (
@@ -418,6 +427,9 @@ function App() {
       </p>
       <p className="remove">
         Click on this text to remove a data value from the chart.
+      </p>
+      <p className="sort">
+        Click on this text to sort data values from the chart
       </p>
     </div>
   );
