@@ -9,7 +9,8 @@ function App() {
     // drawTimeSvg();
     // drawBarChart();
     // drawPaths();
-    drawPieChart();
+    // drawPieChart();
+    drawStackCharts();
   }, []);
 
   const drawScatterPlotSvg = () => {
@@ -555,7 +556,7 @@ function App() {
     const w = 300;
     const h = 300;
     // const innerRadius = w / 3; // doughnut chart
-    const innerRadius = 0
+    const innerRadius = 0;
     const outerRadius = w / 2;
 
     const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
@@ -584,10 +585,67 @@ function App() {
       .attr("fill", (d) => color(d))
       .attr("d", arc);
 
-    arcs.append('text')
-      .attr('transform', d => `translate(${arc.centroid(d)})`)
-      .text(d => d.value)
-      .style('text-anchor', 'middle')
+    arcs
+      .append("text")
+      .attr("transform", (d) => `translate(${arc.centroid(d)})`)
+      .text((d) => d.value)
+      .style("text-anchor", "middle");
+  };
+
+  const drawStackCharts = () => {
+    const dataset = [
+      { apples: 5, oranges: 10, grapes: 22 },
+      { apples: 4, oranges: 12, grapes: 28 },
+      { apples: 2, oranges: 19, grapes: 32 },
+      { apples: 7, oranges: 23, grapes: 35 },
+      { apples: 23, oranges: 17, grapes: 43 },
+    ];
+
+    const w = 600;
+    const h = 300;
+
+    const xScale = d3
+      .scaleBand()
+      .domain(d3.range(dataset.length))
+      .range([0, w])
+      .paddingInner(0.05);
+
+    const yScale = d3
+      .scaleLinear()
+      .domain([0, d3.max(dataset, (d) => d.apples + d.oranges + d.grapes)])
+      .range([h, 0]);
+
+    const colors = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const stack = d3
+      .stack()
+      .keys(["apples", "oranges", "grapes"])
+      .order(d3.stackOrderDescending);
+
+    const series = stack(dataset);
+
+    const svg = d3
+      .select("body")
+      .append("svg")
+      .attr("width", w)
+      .attr("height", h);
+
+    const groups = svg
+      .selectAll("g")
+      .data(series)
+      .enter()
+      .append("g")
+      .attr("fill", (d, i) => colors(i));
+
+    const rects = groups
+      .selectAll("rect")
+      .data((d) => d)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => xScale(i))
+      .attr("y", (d) => yScale(d[1]))
+      .attr("width", (d, i) => xScale.bandwidth())
+      .attr("height", (d) => yScale(d[0]) - yScale(d[1]));
   };
 
   return (
