@@ -7,7 +7,8 @@ function App() {
   useEffect(() => {
     // drawScatterPlotSvg();
     // drawTimeSvg();
-    drawBarChart();
+    // drawBarChart();
+    drawPaths();
   }, []);
 
   const drawScatterPlotSvg = () => {
@@ -299,7 +300,7 @@ function App() {
       .range([h, 0]);
 
     const svg = d3
-      .select("body")
+      .select(".chart")
       .append("svg")
       .attr("width", w)
       .attr("height", h);
@@ -314,11 +315,26 @@ function App() {
       .attr("width", xScale.bandwidth())
       .attr("height", h)
       .style("fill", "teal")
-      .on("mouseover", function (d) {
+      .on("mouseover", function (event, d) {
+        const xPosition =
+          parseFloat(d3.select(this).attr("x")) + xScale.bandwidth() / 2;
+        const yPosition = parseFloat(d3.select(this).attr("y")) + 12;
+
+        d3.select("#tooltip")
+          .style("left", `${xPosition}px`)
+          .style("top", `${yPosition}px`)
+          .classed("hidden", false)
+          .select("#value")
+          .text(d.value);
         d3.select(this).transition().duration(350).style("fill", "orange");
       })
       .on("mouseout", function () {
-        d3.select(this).transition().duration(350).style("fill", "teal");
+        d3.select(this)
+          .transition("restoreBarColor")
+          .duration(350)
+          .style("fill", "teal");
+
+        d3.select("#tooltip").classed("hidden", true);
       });
 
     svg
@@ -417,7 +433,118 @@ function App() {
         .attr("y", (d, i) => yScale(d.value) + 12);
     });
 
-    d3.select("p.sort").on("click", () => {});
+    d3.select("p.sort").on("click", () => {
+      svg
+        .selectAll("rect")
+        .sort((a, b) => d3.ascending(a.value, b.value))
+        .transition("sortBars")
+        .duration(500)
+        .attr("x", (d, i) => xScale(i));
+
+      svg
+        .selectAll("text")
+        .sort((a, b) => d3.ascending(a.value, b.value))
+        .transition("sortBars")
+        .delay((d, i) => i * 50)
+        .duration(500)
+        .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2);
+    });
+  };
+
+  const drawPaths = () => {
+    const rowConverter = (d) => {
+      return {
+        //Make a new Date object for each year + month
+        date: new Date(+d.year, +d.month - 1),
+        //Convert from string to float
+        average: parseFloat(d.average),
+      };
+    };
+
+    d3.csv("assets/mauna_loa_co2_monthly_averages.csv", rowConverter).then(
+      (dataset) => {
+        const w = 800;
+        const h = 300;
+        const padding = 40;
+        const formatTime = d3.timeFormat("%Y");
+
+        console.table(dataset, ["average"]);
+
+        const xScale = d3
+          .scaleTime()
+          .domain([
+            d3.min(dataset, (d) => d.date),
+            d3.max(dataset, (d) => d.date),
+          ])
+          .range([padding, w]);
+
+        const yScale = d3
+          .scaleLinear()
+          .domain([
+            d3.min(dataset, (d) => (d.average >= 0 ? d.average : undefined)),
+            d3.max(dataset, (d) => d.average),
+          ])
+          .range([h - padding, 0]);
+
+        const area = d3
+          .area()
+          .defined((d) => d.average >= 0)
+          .x((d) => xScale(d.date))
+          .y0((d) => yScale.range()[0])
+          .y1((d) => yScale(d.average));
+
+        const dangerArea = d3
+          .area()
+          .defined((d) => d.average >= 350)
+          .x((d) => xScale(d.date))
+          .y0((d) => yScale(350))
+          .y1((d) => yScale(d.average));
+
+        const xAxis = d3.axisBottom(xScale).ticks(10).tickFormat(formatTime);
+        const yAxis = d3.axisLeft(yScale).ticks(5);
+
+        const svg = d3
+          .select("body")
+          .append("svg")
+          .attr("width", w)
+          .attr("height", h);
+
+        svg
+          .append("line")
+          .attr("class", "line safe-level")
+          .attr("x1", padding)
+          .attr("x2", w)
+          .attr("y1", yScale(350))
+          .attr("y2", yScale(350));
+
+        svg
+          .append("text")
+          .attr("x", padding + 10)
+          .attr("y", yScale(360))
+          .text('350 ppm "safe" level')
+          .style("font-size", 12)
+          .style("fill", "red");
+
+        svg.append("path").datum(dataset).attr("class", "area").attr("d", area);
+        svg
+          .append("path")
+          .datum(dataset)
+          .attr("class", "area danger")
+          .attr("d", dangerArea);
+
+        svg
+          .append("g")
+          .attr("class", "axis")
+          .attr("transform", `translate(0, ${h - padding})`)
+          .call(xAxis);
+
+        svg
+          .append("g")
+          .attr("class", "axis")
+          .attr("transform", `translate(${padding}, 0)`)
+          .call(yAxis);
+      }
+    );
   };
 
   return (
@@ -431,6 +558,17 @@ function App() {
       <p className="sort">
         Click on this text to sort data values from the chart
       </p>
+
+      <div className="chart">
+        <div id="tooltip" className="hidden">
+          <p>
+            <strong>Important Label Heading</strong>
+          </p>
+          <p>
+            <span id="value">100</span>%
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
