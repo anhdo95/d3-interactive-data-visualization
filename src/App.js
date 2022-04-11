@@ -8,7 +8,8 @@ function App() {
     // drawScatterPlotSvg();
     // drawTimeSvg();
     // drawBarChart();
-    drawPaths();
+    // drawPaths();
+    drawPieChart();
   }, []);
 
   const drawScatterPlotSvg = () => {
@@ -449,6 +450,8 @@ function App() {
         .duration(500)
         .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2);
     });
+
+    const d = svg.selectAll("rect");
   };
 
   const drawPaths = () => {
@@ -545,6 +548,46 @@ function App() {
           .call(yAxis);
       }
     );
+  };
+
+  const drawPieChart = () => {
+    const dataset = [5, 10, 20, 45, 6, 25];
+    const w = 300;
+    const h = 300;
+    // const innerRadius = w / 3; // doughnut chart
+    const innerRadius = 0
+    const outerRadius = w / 2;
+
+    const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+
+    //Easy colors accessible via a 10-step ordinal scale
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const svg = d3
+      .select("body")
+      .append("svg")
+      .attr("width", w)
+      .attr("height", h);
+
+    const pie = d3.pie();
+
+    const arcs = svg
+      .selectAll("g.arc")
+      .data(pie(dataset))
+      .enter()
+      .append("g")
+      .attr("class", "arc")
+      .attr("transform", `translate(${outerRadius},${outerRadius})`);
+
+    arcs
+      .append("path")
+      .attr("fill", (d) => color(d))
+      .attr("d", arc);
+
+    arcs.append('text')
+      .attr('transform', d => `translate(${arc.centroid(d)})`)
+      .text(d => d.value)
+      .style('text-anchor', 'middle')
   };
 
   return (
